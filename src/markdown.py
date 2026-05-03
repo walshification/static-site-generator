@@ -1,7 +1,10 @@
+import enum
 import re
 from typing import Tuple
 
-from textnode import TextNode, TextType
+from htmlnode import HTMLNode
+from parentnode import ParentNode
+from textnode import TextNode, TextType, text_node_to_html_node
 
 
 IMG_PATTERN = re.compile(r"\!\[([^\]]*)\]\(([^\)]*)\)")
@@ -117,3 +120,91 @@ def text_to_textnodes(text: str) -> list[TextNode]:
 
 def markdown_to_blocks(markdown: str) -> list[str]:
     return [stripped for block in markdown.split("\n\n") if (stripped := block.strip())]
+
+
+class BlockType(enum.StrEnum):
+    PARAGRAPH = enum.auto()
+    HEADING = enum.auto()
+    CODE = enum.auto()
+    QUOTE = enum.auto()
+    UNORDERED_LIST = enum.auto()
+    ORDERED_LIST = enum.auto()
+
+
+HEADING_PATTERN = re.compile(r"^\#{1,6}\s")
+CODE_PATTERN = re.compile(r"^```\n[\s\S]+\n```$")
+
+
+def block_to_block_type(block: str) -> BlockType:
+    if re.match(HEADING_PATTERN, block):
+        return BlockType.HEADING
+    elif re.fullmatch(CODE_PATTERN, block):
+        return BlockType.CODE
+    elif all(line.startswith(">") for line in block.split("\n")):
+        return BlockType.QUOTE
+    elif all(line.startswith("- ") for line in block.split("\n")):
+        return BlockType.UNORDERED_LIST
+    elif all(
+        line.startswith(f"{i}. ") for i, line in enumerate(block.split("\n"), start=1)
+    ):
+        return BlockType.ORDERED_LIST
+
+    return BlockType.PARAGRAPH
+
+
+def text_to_children(text: str) -> list[HTMLNode]:
+    text_nodes = text_to_textnodes(text)
+    return [text_node_to_html_node(node) for node in text_nodes]
+
+
+def markdown_to_html_node(markdown: str) -> HTMLNode:
+    blocks = markdown_to_blocks(markdown)
+    html_nodes = []
+    for block in blocks:
+        block_type = block_to_block_type(block)
+
+        match (block_type):
+            case BlockType.HEADING:
+                hashes, text = block.split(" ", maxsplit=1)
+                tag = f"h{len(hashes)}"
+                child_nodes = text_to_children(text)
+                html_nodes.append(ParentNode(tag, children=child_nodes))
+
+            case BlockType.PARAGRAPH:
+                text = block.replace("\n", " ")
+                html_nodes.append(ParentNode("p", text_to_children(text)))
+
+            case BlockType.QUOTE:
+                stripped = " ".join(
+                    [line.lstrip(">").strip() for line in block.split("\n")]
+                )
+                html_nodes.append(ParentNode("blockquote", text_to_children(stripped)))
+
+            case BlockType.CODE:
+                stripped = block.removeprefix("```\n").removesuffix("```")
+                code = ParentNode(
+                    "code", [text_node_to_html_node(TextNode(stripped, TextType.TEXT))]
+                )
+                pre = ParentNode("pre", [code])
+                html_nodes.append(pre)
+
+            case BlockType.UNORDERED_LIST:
+                items = [
+                    ParentNode("li", text_to_children(line[2:]))
+                    for line in block.split("\n")
+                ]
+                ul = ParentNode("ul", items)
+                html_nodes.append(ul)
+
+            case BlockType.ORDERED_LIST:
+                items = [
+                    ParentNode("li", text_to_children(line.split(". ", maxsplit=1)[1]))
+                    for line in block.split("\n")
+                ]
+                ol = ParentNode("ol", items)
+                html_nodes.append(ol)
+
+            case _:
+                raise ValueError(f"unknown block type: {block_type}")
+
+    return ParentNode("div", html_nodes)
