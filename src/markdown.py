@@ -113,3 +113,7 @@ def text_to_textnodes(text: str) -> list[TextNode]:
     text_nodes = split_nodes_link(text_nodes)
 
     return text_nodes
+
+
+def markdown_to_blocks(markdown: str) -> list[str]:
+    return [stripped for block in markdown.split("\n\n") if (stripped := block.strip())]

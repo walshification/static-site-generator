@@ -3,6 +3,7 @@ import unittest
 from markdown import (
     extract_markdown_images,
     extract_markdown_links,
+    markdown_to_blocks,
     split_nodes_delimiter,
     split_nodes_image,
     split_nodes_link,
@@ -489,3 +490,74 @@ class TestTextToTextNodes(unittest.TestCase):
             ],
             nodes,
         )
+
+
+class TestMarkdownToBlocks(unittest.TestCase):
+    def test_markdown_to_blocks(self):
+        md = """
+This is **bolded** paragraph
+
+This is another paragraph with _italic_ text and `code` here
+This is the same paragraph on a new line
+
+- This is a list
+- with items
+"""
+        blocks = markdown_to_blocks(md)
+        self.assertEqual(
+            blocks,
+            [
+                "This is **bolded** paragraph",
+                (
+                    "This is another paragraph with _italic_ text and `code` here\n"
+                    "This is the same paragraph on a new line"
+                ),
+                "- This is a list\n- with items",
+            ],
+        )
+
+    def test_excessive_blank_lines(self):
+        md = """
+This is **bolded** paragraph
+
+
+
+This is another paragraph with _italic_ text and `code` here
+"""
+        blocks = markdown_to_blocks(md)
+        self.assertEqual(
+            blocks,
+            [
+                "This is **bolded** paragraph",
+                "This is another paragraph with _italic_ text and `code` here"
+            ],
+        )
+
+    def test_excess_whitespace(self):
+        md = """
+                           This is **bolded** paragraph
+
+This is another paragraph with _italic_ text and `code` here\t
+"""
+        blocks = markdown_to_blocks(md)
+        self.assertEqual(
+            blocks,
+            [
+                "This is **bolded** paragraph",
+                "This is another paragraph with _italic_ text and `code` here"
+            ],
+        )
+
+    def test_single_block(self):
+        md = """
+This is **bolded** paragraph
+"""
+        blocks = markdown_to_blocks(md)
+        self.assertEqual(blocks, ["This is **bolded** paragraph"])
+
+    def test_just_whitespace(self):
+        md = """
+\t
+"""
+        blocks = markdown_to_blocks(md)
+        self.assertEqual(blocks, [])
