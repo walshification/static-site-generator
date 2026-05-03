@@ -1,4 +1,11 @@
+import re
+from typing import Tuple
+
 from textnode import TextNode, TextType, text_node_to_html_node
+
+
+IMG_PATTERN = re.compile(r"\!\[([^\]]*)\]\(([^\)]*)\)")
+LINK_PATTERN = re.compile(r"(?<!!)\[([^\]]*)\]\(([^\)]*)\)")
 
 
 def split_nodes_delimiter(old_nodes, delimiter, text_type):
@@ -24,3 +31,11 @@ def split_nodes_delimiter(old_nodes, delimiter, text_type):
                     split_nodes.append(TextNode(part, text_type))
 
     return split_nodes
+
+
+def extract_markdown_images(text: str) -> list[Tuple[str, str]]:
+    return re.findall(IMG_PATTERN, text)
+
+
+def extract_markdown_links(text: str) -> list[Tuple[str, str]]:
+    return re.findall(LINK_PATTERN, text)

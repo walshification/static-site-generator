@@ -1,10 +1,14 @@
 import unittest
 
-from markdown import split_nodes_delimiter
+from markdown import (
+    extract_markdown_images,
+    extract_markdown_links,
+    split_nodes_delimiter,
+)
 from textnode import TextNode, TextType
 
 
-class TestMarkdown(unittest.TestCase):
+class TestSplitNodesDelimiter(unittest.TestCase):
     def test_code(self):
         old_node = TextNode("This has `code blocks` in it", TextType.TEXT)
         nodes = split_nodes_delimiter([old_node], "`", TextType.CODE)
@@ -121,3 +125,51 @@ class TestMarkdown(unittest.TestCase):
                 TextNode(" then C", TextType.TEXT),
             ],
         )
+
+
+class TestExtractMarkdownImages(unittest.TestCase):
+    def test_extract_markdown_images(self):
+        matches = extract_markdown_images(
+            "This is text with an ![image](https://i.imgur.com/zjjcJKZ.png)"
+        )
+        self.assertListEqual([("image", "https://i.imgur.com/zjjcJKZ.png")], matches)
+
+    def test_extract_multiple_markdown_images(self):
+        matches = extract_markdown_images(
+            "This has one ![image](https://i.imgur.com/zjjcJKZ.png) "
+            "and ![another image](https://i.imgur.com/asdf.png)"
+        )
+        self.assertListEqual(
+            [
+                ("image", "https://i.imgur.com/zjjcJKZ.png"),
+                ("another image", "https://i.imgur.com/asdf.png"),
+            ],
+            matches,
+        )
+
+
+class TestExtractMarkdownLinks(unittest.TestCase):
+    def test_extract_markdown_links(self):
+        matches = extract_markdown_links(
+            "This is text with a [link](https://example.com)"
+        )
+        self.assertListEqual([("link", "https://example.com")], matches)
+
+    def test_extract_multiple_markdown_links(self):
+        matches = extract_markdown_links(
+            "This has one [link](https://i.imgur.com/zjjcJKZ.png) "
+            "and [another link](https://i.imgur.com/asdf.png)"
+        )
+        self.assertListEqual(
+            [
+                ("link", "https://i.imgur.com/zjjcJKZ.png"),
+                ("another link", "https://i.imgur.com/asdf.png"),
+            ],
+            matches,
+        )
+
+    def test_extract_markdown_links_ignores_images(self):
+        matches = extract_markdown_links(
+            "This has an ![image](https://example.com/img.png) but no links"
+        )
+        self.assertListEqual([], matches)
