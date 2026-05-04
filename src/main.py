@@ -1,6 +1,7 @@
 import os
 import shutil
 
+from markdown import extract_title, markdown_to_html_node
 from textnode import TextNode, TextType
 
 
@@ -24,12 +25,34 @@ def build():
             shutil.copy(src, dst)
 
 
+def generate_page(from_path, template_path, dest_path):
+    print(f"Generating page from {from_path} to {dest_path} using {template_path}")
+    with open(from_path) as f:
+        contents = f.read()
+    with open(template_path) as f:
+        template = f.read()
+
+    html = markdown_to_html_node(contents).to_html()
+    title = extract_title(contents)
+
+    page = template.replace("{{ Title }}", title).replace("{{ Content }}", html)
+
+    os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+    with open(dest_path, "w") as f:
+        f.write(page)
+
+
 def main():
     build()
-    text_node = TextNode(
-        "This is some anchor text", TextType.LINK, "https://www.boot.dev"
+
+    project_root = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
+    content_index = os.path.join(project_root, "content", "index.md")
+    template_html = os.path.join(project_root, "template.html")
+    public_index = os.path.join(project_root, "public", "index.html")
+
+    generate_page(
+        from_path=content_index, template_path=template_html, dest_path=public_index
     )
-    print(text_node)
 
 
 if __name__ == "__main__":

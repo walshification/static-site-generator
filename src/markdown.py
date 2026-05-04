@@ -208,3 +208,10 @@ def markdown_to_html_node(markdown: str) -> HTMLNode:
                 raise ValueError(f"unknown block type: {block_type}")
 
     return ParentNode("div", html_nodes)
+
+
+def extract_title(markdown: str) -> str:
+    for line in markdown.splitlines():
+        if line.startswith("# "):
+            return line[2:].strip()
+    raise ValueError("no h1 header found in markdown")

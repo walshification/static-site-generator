@@ -7,12 +7,17 @@ class LeafNode(HTMLNode):
     def __init__(self, tag: str, value: str, props: Optional[dict[str, str]] = None):
         super().__init__(tag=tag, value=value, props=props)
 
+    VOID_TAGS = {"img", "br", "hr", "input", "link", "meta"}
+
     def to_html(self):
-        if not self.value:
+        if not self.value and self.tag not in self.VOID_TAGS:
             raise ValueError("all leaf nodes must have a value")
 
         if not self.tag:
             return self.value
+
+        if self.tag in self.VOID_TAGS:
+            return f"<{self.tag}{self.props_to_html()} />"
 
         return f"<{self.tag}{self.props_to_html()}>{self.value}</{self.tag}>"
 

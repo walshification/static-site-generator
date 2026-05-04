@@ -5,6 +5,7 @@ from markdown import (
     block_to_block_type,
     extract_markdown_images,
     extract_markdown_links,
+    extract_title,
     markdown_to_blocks,
     markdown_to_html_node,
     split_nodes_delimiter,
@@ -779,3 +780,28 @@ the **same** even with inline stuff
                 "</div>"
             ),
         )
+
+
+class TestExtractTitle(unittest.TestCase):
+    def test_simple_title(self):
+        self.assertEqual(extract_title("# Hello"), "Hello")
+
+    def test_title_with_trailing_whitespace(self):
+        self.assertEqual(extract_title("# Hello   "), "Hello")
+
+    def test_title_in_document(self):
+        md = "# My Title\n\nSome paragraph text."
+        self.assertEqual(extract_title(md), "My Title")
+
+    def test_h2_not_treated_as_title(self):
+        md = "## Not a Title\n\nSome text."
+        with self.assertRaises(ValueError):
+            extract_title(md)
+
+    def test_h1_and_h2_returns_h1(self):
+        md = "# Main Title\n\n## Subtitle\n\nSome text."
+        self.assertEqual(extract_title(md), "Main Title")
+
+    def test_no_heading_raises(self):
+        with self.assertRaises(ValueError):
+            extract_title("Just some text with no heading.")
