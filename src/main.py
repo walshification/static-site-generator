@@ -11,15 +11,15 @@ basepath = sys.argv[1] if len(sys.argv) > 1 else "/"
 def build():
     project_root = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
     static_dir = os.path.join(project_root, "static")
-    public_dir = os.path.join(project_root, "public")
+    docs_dir = os.path.join(project_root, "docs")
 
-    if os.path.exists(public_dir):
-        shutil.rmtree(public_dir)
-    os.makedirs(public_dir)
+    if os.path.exists(docs_dir):
+        shutil.rmtree(docs_dir)
+    os.makedirs(docs_dir)
 
     for dirpath, _, filenames in os.walk(static_dir):
         rel = os.path.relpath(dirpath, static_dir)
-        dst_dir = os.path.join(public_dir, rel)
+        dst_dir = os.path.join(docs_dir, rel)
         os.makedirs(dst_dir, exist_ok=True)
         for filename in filenames:
             src = os.path.join(dirpath, filename)
