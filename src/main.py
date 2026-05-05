@@ -1,8 +1,11 @@
 import os
 import shutil
+import sys
 
 from markdown import extract_title, markdown_to_html_node
-from textnode import TextNode, TextType
+
+
+basepath = sys.argv[1] if len(sys.argv) > 1 else "/"
 
 
 def build():
@@ -25,7 +28,7 @@ def build():
             shutil.copy(src, dst)
 
 
-def generate_page(from_path, template_path, dest_path):
+def generate_page(basepath, from_path, template_path, dest_path):
     print(f"Generating page from {from_path} to {dest_path} using {template_path}")
     with open(from_path) as f:
         contents = f.read()
@@ -35,22 +38,30 @@ def generate_page(from_path, template_path, dest_path):
     html = markdown_to_html_node(contents).to_html()
     title = extract_title(contents)
 
-    page = template.replace("{{ Title }}", title).replace("{{ Content }}", html)
+    page = template.replace(
+        "{{ Title }}", title
+    ).replace(
+        "{{ Content }}", html
+    ).replace(
+        'href="/"', f'href="{basepath}"'
+    ).replace(
+        'src="/"', f'src="{basepath}"'
+    )
 
     os.makedirs(os.path.dirname(dest_path), exist_ok=True)
     with open(dest_path, "w") as f:
         f.write(page)
 
 
-def generate_pages_recursive(content_dir, template_path, dest_dir):
+def generate_pages_recursive(basepath, content_dir, template_path, dest_dir):
     for entry in os.listdir(content_dir):
         src = os.path.join(content_dir, entry)
         dst = os.path.join(dest_dir, entry)
 
         if os.path.isdir(src):
-            generate_pages_recursive(src, template_path, dst)
+            generate_pages_recursive(basepath, src, template_path, dst)
         elif entry.endswith(".md"):
-            generate_page(src, template_path, dst[:-3] + ".html")
+            generate_page(basepath, src, template_path, dst[:-3] + ".html")
 
 
 def main():
@@ -59,9 +70,9 @@ def main():
     project_root = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
     content_dir = os.path.join(project_root, "content")
     template_html = os.path.join(project_root, "template.html")
-    public_dir = os.path.join(project_root, "public")
+    docs_dir = os.path.join(project_root, "docs")
 
-    generate_pages_recursive(content_dir, template_html, public_dir)
+    generate_pages_recursive(basepath, content_dir, template_html, docs_dir)
 
 
 if __name__ == "__main__":
